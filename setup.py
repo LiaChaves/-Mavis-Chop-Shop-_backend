@@ -1,13 +1,14 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
-    name="mavis-backend",
+    name="mavis-chop-shop",
     version="1.0.0",
+    packages=find_packages(),
     install_requires=[
-        "Flask==2.3.3",
-        "flask-cors==4.0.0",
+        "Flask==3.0.2",
+        "flask-cors==4.0.0", 
         "rembg==2.0.69",
-        "Pillow==9.5.0",
-        "gunicorn==20.1.0",
+        "Pillow==10.3.0",
+        "gunicorn==21.2.0",
     ],
 )
