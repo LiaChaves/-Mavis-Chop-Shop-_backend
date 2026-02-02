@@ -12,7 +12,8 @@ CORS(app)
 def home():
     return jsonify({
         'message': 'Mavis Background Remover está funcionando!',
-        'status': 'online'
+        'status': 'online',
+        'instructions': 'Envie uma imagem POST para /remove-bg'
     })
 
 @app.route('/remove-bg', methods=['POST'])
@@ -43,6 +44,7 @@ def remove_background():
         )
         
     except Exception as e:
+        print(f"Erro: {str(e)}")  # Log para debug
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
