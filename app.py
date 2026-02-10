@@ -1,23 +1,20 @@
 from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
-from rembg import remove, new_session
-from PIL import Image
 import io
 import os
+from PIL import Image
 
 app = Flask(__name__)
 CORS(app)
 
-# --- MUDANÇA IMPORTANTE AQUI ---
-# Não carregamos a sessão agora. Deixamos como None.
-# Isso permite que o Gunicorn inicie o servidor IMEDIATAMENTE.
+# Variável global para manter a sessão da IA na memória após o primeiro uso
 model_session = None
 
 @app.route('/')
 def home():
     return jsonify({
         'message': '✂️ Mavis Chop Shop Backend Online!',
-        'status': 'Aguardando cortes...'
+        'status': 'Pronta para cortar!'
     })
 
 @app.route('/remove-bg', methods=['POST'])
@@ -25,24 +22,22 @@ def remove_background():
     global model_session
     
     try:
+        # Importamos o rembg apenas aqui dentro para o servidor ligar rápido
+        from rembg import remove, new_session
+        
         if 'image' not in request.files:
             return jsonify({'error': 'Nenhuma imagem enviada!'}), 400
             
         file = request.files['image']
-        if file.filename == '':
-            return jsonify({'error': 'Nenhum arquivo selecionado!'}), 400
-
-        # --- CARREGAMENTO PREGUIÇOSO (LAZY LOADING) ---
-        # A IA só carrega na primeira vez que alguém usa.
+        
+        # Carrega o modelo apenas uma vez (Lazy Loading)
         if model_session is None:
-            print("⏳ Carregando modelo de IA pela primeira vez... (pode demorar um pouco)")
-            # Usamos o modelo 'u2netp' (leve) para não estourar a memória
+            # Usamos o modelo 'u2netp' que é a versão leve para economizar RAM
             model_session = new_session("u2netp")
-            print("✅ Modelo carregado!")
 
         input_image = Image.open(file.stream)
         
-        # Processa a imagem usando a sessão carregada
+        # Processamento
         output_image = remove(input_image, session=model_session)
         
         img_io = io.BytesIO()
@@ -57,10 +52,8 @@ def remove_background():
         )
         
     except Exception as e:
-        print(f"Erro no servidor: {str(e)}")
-        # Se der erro de memória, resetamos a sessão para tentar de novo limpo na próxima
-        model_session = None 
-        return jsonify({'error': str(e)}), 500
+        print(f"Erro: {str(e)}")
+        return jsonify({'error': 'Erro ao processar imagem. Tente uma menor.'}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
